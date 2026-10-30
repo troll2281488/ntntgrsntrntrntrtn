@@ -1452,31 +1452,61 @@ window.doLogin=async function(){
     var pass=($('loginPassword')&&$('loginPassword').value)||'';
     var avatar=((($('loginAvatar')&&$('loginAvatar').value)||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
     if(!name||!pass){showToast(t('err_fill'));return;}
-    if(name.length<2||name.length>24||!/[\p{L}\p{N}_-]/u.test(name)||/[^\p{L}\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
+    if(name.length<2||name.length>24||!/[\\p{L}\\p{N}_-]/u.test(name)||/[^\\p{L}\\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
     if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
     window.dgLoginInProgress=true;
     var email='dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
     var profileRef=db.ref('users/'+name);
     try{
-      var snap=await profileRef.once('value');
-      var old=snap.exists()?snap.val():null;
-      if(old&&old.blocked){window.dgLoginInProgress=false;showToast(t('err_blocked'));return;}
+      // Сначала подтверждаем логин в Firebase Auth. Чтение профиля до входа
+      // ломается, если Realtime Database разрешает чтение только авторизованным.
       var credential=null;
+      var createdNow=false;
       try{
         credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
       }catch(authErr){
         if(authErr.code==='auth/user-not-found'){
-          if(old&&old.password&&old.password!==pass){window.dgLoginInProgress=false;showToast(t('err_pass'));return;}
-          if(old&&!old.password&&!old.authUid){window.dgLoginInProgress=false;showToast('Старый аккаунт требует восстановления. Напиши администратору.');return;}
-          try{credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);}
-          catch(createErr){
-            if(createErr.code==='auth/email-already-in-use')credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
-            else throw createErr;
+          try{
+            credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);
+            createdNow=true;
+          }catch(createErr){
+            if(createErr.code==='auth/email-already-in-use'){
+              credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
+            }else{
+              throw createErr;
+            }
           }
-        }else{throw authErr;}
+        }else{
+          throw authErr;
+        }
       }
-      var authUser=credential.user;
+      var authUser=credential&&credential.user;
       if(!authUser)throw new Error('Firebase Authentication не вернул пользователя');
+
+      // Теперь запрос к Realtime Database выполняется уже после авторизации.
+      var snap=await profileRef.once('value');
+      var old=snap.exists()?snap.val():null;
+      if(old&&old.blocked){
+        await firebase.auth().signOut();
+        window.dgLoginInProgress=false;
+        showToast(t('err_blocked'));
+        return;
+      }
+      if(createdNow&&old&&old.password&&old.password!==pass){
+        try{await authUser.delete();}catch(deleteErr){console.warn('[DonorGram auth] Не удалось удалить ошибочно созданный Auth-профиль',deleteErr);}
+        await firebase.auth().signOut();
+        window.dgLoginInProgress=false;
+        showToast(t('err_pass'));
+        return;
+      }
+      if(createdNow&&old&&!old.password&&!old.authUid){
+        try{await authUser.delete();}catch(deleteErr){console.warn('[DonorGram auth] Не удалось удалить временный Auth-профиль',deleteErr);}
+        await firebase.auth().signOut();
+        window.dgLoginInProgress=false;
+        showToast('Старый аккаунт требует восстановления. Напиши администратору.');
+        return;
+      }
+
       var profile=old||{name:name,avatar:avatar,createdAt:Date.now(),status:'online',blocked:false,bio:''};
       profile.name=profile.name||name;
       profile.avatar=profile.avatar||avatar;
@@ -1496,6 +1526,7 @@ window.doLogin=async function(){
       else if(err.code==='auth/weak-password')message='Пароль должен содержать минимум 6 символов.';
       else if(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/invalid-login-credentials')message='Неверный никнейм или пароль.';
       else if(err.code==='auth/network-request-failed')message='Нет соединения с Firebase.';
+      else if(err.code==='PERMISSION_DENIED'||err.code==='permission-denied')message='Firebase отклонил доступ к профилю. Проверь правила Realtime Database.';
       showToast(message);
     }
 };
