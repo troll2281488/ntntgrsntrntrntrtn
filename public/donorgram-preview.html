@@ -1473,9 +1473,10 @@ window.doLogin=async function(){
             createdNow=true;
           }catch(createErr){
             if(createErr.code==='auth/email-already-in-use'){
-              // Email уже занят: значит аккаунт существует, пароль неверный
-              // либо нужно войти в него обычным способом.
-              credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
+              // Не маскируем конфликт уже созданного Firebase-аккаунта.
+              var takenErr=new Error('Firebase account exists but password did not match');
+              takenErr.code='DG_AUTH_EMAIL_TAKEN_PASSWORD_MISMATCH';
+              throw takenErr;
             }else{
               throw createErr;
             }
@@ -1526,7 +1527,8 @@ window.doLogin=async function(){
       window.dgLoginInProgress=false;
       console.error('[DonorGram auth]',err);
       var message='Не удалось войти. Проверь подключение и настройки Firebase.';
-      if(err.code==='auth/operation-not-allowed')message='В Firebase Console включи Authentication → Sign-in method → Email/Password.';
+      if(err.code==='DG_AUTH_EMAIL_TAKEN_PASSWORD_MISMATCH')message='Этот ник уже зарегистрирован в Firebase, но пароль не подошёл. Возможно, предыдущая попытка создала аккаунт без профиля. Нужна проверка аккаунта в Firebase.';
+      else if(err.code==='auth/operation-not-allowed')message='Firebase не разрешает регистрацию: включи Authentication → Sign-in method → Email/Password.';
       else if(err.code==='auth/weak-password')message='Пароль должен содержать минимум 6 символов.';
       else if(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/invalid-login-credentials')message='Неверный никнейм или пароль.';
       else if(err.code==='auth/network-request-failed')message='Нет соединения с Firebase.';
