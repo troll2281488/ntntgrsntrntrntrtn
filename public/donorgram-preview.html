@@ -1452,7 +1452,7 @@ window.doLogin=async function(){
     var pass=($('loginPassword')&&$('loginPassword').value)||'';
     var avatar=((($('loginAvatar')&&$('loginAvatar').value)||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
     if(!name||!pass){showToast(t('err_fill'));return;}
-    var isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name);
+    var isEmail=name.indexOf('@')!==-1;
     if(!isEmail&&(name.length<2||name.length>24||!/[\p{L}\p{N}_-]/u.test(name)||/[^\p{L}\p{N}_-]/u.test(name))){showToast('Введите никнейм (2–24 символа) или корректный e-mail');return;}
     if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
     window.dgLoginInProgress=true;
