@@ -1452,7 +1452,7 @@ window.doLogin=async function(){
     var pass=($('loginPassword')&&$('loginPassword').value)||'';
     var avatar=((($('loginAvatar')&&$('loginAvatar').value)||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
     if(!name||!pass){showToast(t('err_fill'));return;}
-    if(name.length<2||name.length>24||!/[\\p{L}\\p{N}_-]/u.test(name)||/[^\\p{L}\\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
+    if(name.length<2||name.length>24||!/[\p{L}\p{N}_-]/u.test(name)||/[^\p{L}\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
     if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
     window.dgLoginInProgress=true;
     var email='dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
@@ -1460,14 +1460,14 @@ window.doLogin=async function(){
     try{
       var snap=await profileRef.once('value');
       var old=snap.exists()?snap.val():null;
-      if(old&&old.blocked){showToast(t('err_blocked'));return;}
+      if(old&&old.blocked){window.dgLoginInProgress=false;showToast(t('err_blocked'));return;}
       var credential=null;
       try{
         credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
       }catch(authErr){
         if(authErr.code==='auth/user-not-found'){
-          if(old&&old.password&&old.password!==pass){showToast(t('err_pass'));return;}
-          if(old&&!old.password&&!old.authUid){showToast('Старый аккаунт требует восстановления. Напиши администратору.');return;}
+          if(old&&old.password&&old.password!==pass){window.dgLoginInProgress=false;showToast(t('err_pass'));return;}
+          if(old&&!old.password&&!old.authUid){window.dgLoginInProgress=false;showToast('Старый аккаунт требует восстановления. Напиши администратору.');return;}
           try{credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);}
           catch(createErr){
             if(createErr.code==='auth/email-already-in-use')credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
@@ -1971,32 +1971,36 @@ document.getElementById('donAiClearBtn').addEventListener('click', () => {
 })();
 </script>
 
-<!-- DonorGram emergency UI bootstrap: separate script so a failure in the main script cannot leave every screen hidden. -->
+<!-- DonorGram startup fallback: never leave the user on a blank screen. -->
 <script>
 (function () {
-  function revealUsableScreen() {
-    try {
-      var welcome = document.getElementById('welcomeScreen');
-      var login = document.getElementById('loginScreen');
-      var app = document.getElementById('mainApp');
-      if (!welcome || !login || !app) return;
-      var visible = (el) => !!el && getComputedStyle(el).display !== 'none' && (el.classList.contains('show') || el.style.display !== 'none');
-      if (visible(welcome) || visible(login) || visible(app)) return;
-      // Prefer login as a safe fallback; the original app still handles auth when Firebase loads.
+  function ensureLoginVisible() {
+    var welcome = document.getElementById('welcomeScreen');
+    var login = document.getElementById('loginScreen');
+    var app = document.getElementById('mainApp');
+    if (!welcome || !login || !app) return;
+    // If the app has not restored an authenticated session, show the login form.
+    if (app.style.display !== 'block') {
       welcome.classList.remove('show');
       welcome.style.display = 'none';
-      app.style.display = 'none';
       login.style.display = 'flex';
       login.style.visibility = 'visible';
       login.style.opacity = '1';
-      login.style.position = 'relative';
-      login.style.zIndex = '10';
-    } catch (_) {}
+      login.style.pointerEvents = 'auto';
+    }
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(revealUsableScreen, 0); setTimeout(revealUsableScreen, 700); });
-  else { setTimeout(revealUsableScreen, 0); setTimeout(revealUsableScreen, 700); }
-  window.addEventListener('error', function(){ setTimeout(revealUsableScreen, 0); });
-  window.addEventListener('unhandledrejection', function(){ setTimeout(revealUsableScreen, 0); });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      ensureLoginVisible();
+      setTimeout(ensureLoginVisible, 500);
+    });
+  } else {
+    ensureLoginVisible();
+    setTimeout(ensureLoginVisible, 500);
+  }
+  window.addEventListener('error', function () {
+    if (!document.getElementById('mainApp') || document.getElementById('mainApp').style.display !== 'block') ensureLoginVisible();
+  });
 })();
 </script>
 
