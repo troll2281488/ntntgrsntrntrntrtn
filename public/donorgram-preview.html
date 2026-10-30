@@ -1452,7 +1452,7 @@ window.doLogin=async function(){
     var pass=($('loginPassword')&&$('loginPassword').value)||'';
     var avatar=((($('loginAvatar')&&$('loginAvatar').value)||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
     if(!name||!pass){showToast(t('err_fill'));return;}
-    if(name.length<2||name.length>24||!/[\\p{L}\\p{N}_-]/u.test(name)||/[^\\p{L}\\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
+    if(name.length<2||name.length>24||!/[\p{L}\p{N}_-]/u.test(name)||/[^\p{L}\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
     if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
     window.dgLoginInProgress=true;
     var email='dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
@@ -1527,6 +1527,16 @@ window.doLogin=async function(){
       else if(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/invalid-login-credentials')message='Неверный никнейм или пароль.';
       else if(err.code==='auth/network-request-failed')message='Нет соединения с Firebase.';
       else if(err.code==='PERMISSION_DENIED'||err.code==='permission-denied')message='Firebase отклонил доступ к профилю. Проверь правила Realtime Database.';
+      else if(err.code==='auth/invalid-email')message='Не удалось сформировать логин Firebase для этого ника. Напиши администратору.';
+      else if(err.code==='auth/too-many-requests')message='Слишком много попыток входа. Подожди немного и попробуй снова.';
+      else if(err.code==='auth/user-disabled')message='Этот аккаунт отключён в Firebase Authentication.';
+      else if(err.code==='auth/invalid-api-key')message='Firebase: неверный API-ключ проекта.';
+      else if(err.code==='auth/app-not-authorized')message='Firebase: этот домен не разрешён для входа. Добавь адрес сайта в Authorized domains.';
+      else if(err.code==='auth/network-request-failed')message='Нет соединения с Firebase.';
+      if(message==='Не удалось войти. Проверь подключение и настройки Firebase.'){
+        var detail=err&&((err.code&&String(err.code))||(err.message&&String(err.message)));
+        if(detail)message='Ошибка входа: '+detail;
+      }
       showToast(message);
     }
 };
