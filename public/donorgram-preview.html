@@ -557,7 +557,7 @@ button,input,textarea,select{touch-action:manipulation}
 <div id="loginScreen" class="login-screen" style="display:none">
 <div class="login-card">
 <h2>✨ DonorGram Pro</h2>
-<input type="text" id="loginName" data-i18n-ph="login_name" placeholder="Никнейм" autofocus>
+<input type="text" id="loginName" data-i18n-ph="login_name" placeholder="Никнейм или e-mail" autocomplete="username" autofocus>
 <input type="password" id="loginPassword" data-i18n-ph="login_pass" placeholder="Пароль">
 <input type="text" id="loginAvatar" data-i18n-ph="login_avatar" placeholder="Аватар (2 буквы)" maxlength="2" style="text-transform:uppercase">
 <button class="login-btn" id="loginBtn" type="button" data-i18n="login_btn">Войти / Регистрация</button>
@@ -975,7 +975,7 @@ function mediaGet(id){return openMediaDB().then(function(d){return new Promise(f
 function mediaPut(id,url){return openMediaDB().then(function(d){return new Promise(function(res){try{var tx=d.transaction(MEDIA_ST,'readwrite');var st=tx.objectStore(MEDIA_ST);st.put({id:id,url:url,ts:Date.now()});tx.oncomplete=function(){res(true);};tx.onerror=function(){res(false);};}catch(e){res(false);}});}).catch(function(){return false;});}
 function compressImage(file,maxDim,quality){return new Promise(function(res){var img=new Image();var url=URL.createObjectURL(file);img.onload=function(){var w=img.width,h=img.height;if(w>maxDim||h>maxDim){if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',quality));};img.onerror=function(){URL.revokeObjectURL(url);res(null);};img.src=url;});}
 
-const TRANSLATIONS={ru:{welcome_title_0:'DonorGram',welcome_sub_0:'Самый быстрый мессенджер в мире.',welcome_title_1:'Быстро',welcome_sub_1:'Работает быстрее.',welcome_title_2:'Свободно',welcome_sub_2:'Свободный.',welcome_title_3:'Мощно',welcome_sub_3:'Без ограничений.',welcome_title_4:'Облачно',welcome_sub_4:'С нескольких устройств.',welcome_start:'Начать общение',welcome_choose_lang:'Выберите язык',login_name:'Никнейм',login_pass:'Пароль',login_avatar:'Аватар',login_btn:'Войти / Регистрация',login_users:'пользователей',chat_search:'🔍 Поиск...',chat_select:'Выберите чат',chat_type:'Сообщение...',chat_online:'🟢 в сети',chat_editing:'Редактирование',chat_rec_cancel:'Отмена',chat_rec_send:'➤',chat_clear:'🗑 Очистить',chat:'⚙️ Чат',settings:'⚙️ Настройки',settings_lang:'🌐 Язык',settings_notif:'🔔 Уведомления',settings_vibro:'📳 Вибрация',settings_edit_profile:'✏️ Профиль',profile:'👤 Профиль',editprofile_title:'✏️ Профиль',editprofile_avatar:'Аватар',editprofile_name:'Имя',editprofile_bio:'Статус',editprofile_pass:'Новый пароль',cancel:'Отмена',save:'💾 Сохранить',shop:'🛍️ Магазин',shop_all_free:'✨ ВСЁ БЕСПЛАТНО',shop_avatars:'👤 Аватарки',shop_bubbles:'💬 Пузыри',shop_special:'🌟 Особые',shop_sg:'🌈 SPACEGOD',shop_upload_theme:'📷 Фото',shop_reset_theme:'🗑 Сбросить',attach:'📎 Вложения',attach_photo:'Фото',attach_video:'Видео',bg:'🎨 Обои',stickers:'😎 Стикеры',logout_confirm:'Выйти?',notif_enable:'🔔 Включить уведомления?',notif_on:'ВКЛ',err_fill:'❌ Введите ник и пароль',err_pass:'❌ Неверный пароль',err_blocked:'❌ Заблокирован',toast_hello:'✅ Привет,',toast_saved:'💾',toast_error:'❌ Ошибка',you_offline:'⚫ не в сети',you_online:'🟢 в сети'},en:{welcome_title_0:'DonorGram',welcome_sub_0:'Fastest messenger.',welcome_title_1:'Fast',welcome_sub_1:'Faster.',welcome_title_2:'Free',welcome_sub_2:'Free.',welcome_title_3:'Powerful',welcome_sub_3:'No limits.',welcome_title_4:'Cloud',welcome_sub_4:'Multi-device.',welcome_start:'Start',welcome_choose_lang:'Language',login_name:'Nickname',login_pass:'Password',login_avatar:'Avatar',login_btn:'Login / Sign up',login_users:'users',chat_search:'🔍 Search...',chat_select:'Select chat',chat_type:'Message...',chat_online:'🟢 online',chat_editing:'Editing',chat_rec_cancel:'Cancel',chat_rec_send:'➤',chat_clear:'🗑 Clear',chat:'⚙️ Chat',settings:'⚙️ Settings',settings_lang:'🌐 Language',settings_notif:'🔔 Notifications',settings_vibro:'📳 Vibration',settings_edit_profile:'✏️ Edit profile',profile:'👤 Profile',editprofile_title:'✏️ Profile',editprofile_avatar:'Avatar',editprofile_name:'Name',editprofile_bio:'Bio',editprofile_pass:'New password',cancel:'Cancel',save:'💾 Save',shop:'🛍️ Shop',shop_all_free:'✨ ALL FREE',shop_avatars:'👤 Avatars',shop_bubbles:'💬 Bubbles',shop_special:'🌟 Special',shop_sg:'🌈 SPACEGOD',shop_upload_theme:'📷 Upload',shop_reset_theme:'🗑 Reset',attach:'📎 Attachments',attach_photo:'Photo',attach_video:'Video',bg:'🎨 Wallpaper',stickers:'😎 Stickers',logout_confirm:'Logout?',notif_enable:'🔔 Enable?',notif_on:'ON',err_fill:'❌ Enter credentials',err_pass:'❌ Wrong password',err_blocked:'❌ Blocked',toast_hello:'✅ Hi,',toast_saved:'💾',toast_error:'❌ Error',you_offline:'⚫ offline',you_online:'🟢 online'},uk:{welcome_title_0:'DonorGram',welcome_sub_0:'Найшвидший.',welcome_title_1:'Швидко',welcome_sub_1:'Швидше.',welcome_title_2:'Вільно',welcome_sub_2:'Вільний.',welcome_title_3:'Потужно',welcome_sub_3:'Без обмежень.',welcome_title_4:'У хмарі',welcome_sub_4:'Мульти-доступ.',welcome_start:'Почати',welcome_choose_lang:'Мова',login_name:'Нікнейм',login_pass:'Пароль',login_avatar:'Аватар',login_btn:'Увійти',login_users:'користувачів',chat_search:'🔍 Пошук...',chat_select:'Виберіть чат',chat_type:'Повідомлення...',chat_online:'🟢 онлайн',chat_editing:'Редагування',chat_rec_cancel:'Скасувати',chat_rec_send:'➤',chat_clear:'🗑',chat:'⚙️ Чат',settings:'⚙️ Налаштування',settings_lang:'🌐 Мова',settings_notif:'🔔 Повідомлення',settings_vibro:'📳 Вібрація',settings_edit_profile:'✏️ Профіль',profile:'👤 Профіль',editprofile_title:'✏️ Профіль',editprofile_avatar:'Аватар',editprofile_name:"Ім'я",editprofile_bio:'Статус',editprofile_pass:'Пароль',cancel:'Скасувати',save:'💾 Зберегти',shop:'🛍️ Магазин',shop_all_free:'✨ БЕЗКОШТОВНО',shop_avatars:'👤 Аватарки',shop_bubbles:'💬 Бульбашки',shop_special:'🌟 Особливі',shop_sg:'🌈 SPACEGOD',shop_upload_theme:'📷',shop_reset_theme:'🗑',attach:'📎',attach_photo:'Фото',attach_video:'Відео',bg:'🎨 Шпалери',stickers:'😎 Стікери',logout_confirm:'Вийти?',notif_enable:'🔔 Увімкнути?',notif_on:'УВІМК',err_fill:'❌ Введіть дані',err_pass:'❌ Невірний пароль',err_blocked:'❌ Заблоковано',toast_hello:'✅ Привіт,',toast_saved:'💾',toast_error:'❌ Помилка',you_offline:'⚫ офлайн',you_online:'🟢 онлайн'}};
+const TRANSLATIONS={ru:{welcome_title_0:'DonorGram',welcome_sub_0:'Самый быстрый мессенджер в мире.',welcome_title_1:'Быстро',welcome_sub_1:'Работает быстрее.',welcome_title_2:'Свободно',welcome_sub_2:'Свободный.',welcome_title_3:'Мощно',welcome_sub_3:'Без ограничений.',welcome_title_4:'Облачно',welcome_sub_4:'С нескольких устройств.',welcome_start:'Начать общение',welcome_choose_lang:'Выберите язык',login_name:'Никнейм или e-mail',login_pass:'Пароль',login_avatar:'Аватар',login_btn:'Войти / Регистрация',login_users:'пользователей',chat_search:'🔍 Поиск...',chat_select:'Выберите чат',chat_type:'Сообщение...',chat_online:'🟢 в сети',chat_editing:'Редактирование',chat_rec_cancel:'Отмена',chat_rec_send:'➤',chat_clear:'🗑 Очистить',chat:'⚙️ Чат',settings:'⚙️ Настройки',settings_lang:'🌐 Язык',settings_notif:'🔔 Уведомления',settings_vibro:'📳 Вибрация',settings_edit_profile:'✏️ Профиль',profile:'👤 Профиль',editprofile_title:'✏️ Профиль',editprofile_avatar:'Аватар',editprofile_name:'Имя',editprofile_bio:'Статус',editprofile_pass:'Новый пароль',cancel:'Отмена',save:'💾 Сохранить',shop:'🛍️ Магазин',shop_all_free:'✨ ВСЁ БЕСПЛАТНО',shop_avatars:'👤 Аватарки',shop_bubbles:'💬 Пузыри',shop_special:'🌟 Особые',shop_sg:'🌈 SPACEGOD',shop_upload_theme:'📷 Фото',shop_reset_theme:'🗑 Сбросить',attach:'📎 Вложения',attach_photo:'Фото',attach_video:'Видео',bg:'🎨 Обои',stickers:'😎 Стикеры',logout_confirm:'Выйти?',notif_enable:'🔔 Включить уведомления?',notif_on:'ВКЛ',err_fill:'❌ Введите ник и пароль',err_pass:'❌ Неверный пароль',err_blocked:'❌ Заблокирован',toast_hello:'✅ Привет,',toast_saved:'💾',toast_error:'❌ Ошибка',you_offline:'⚫ не в сети',you_online:'🟢 в сети'},en:{welcome_title_0:'DonorGram',welcome_sub_0:'Fastest messenger.',welcome_title_1:'Fast',welcome_sub_1:'Faster.',welcome_title_2:'Free',welcome_sub_2:'Free.',welcome_title_3:'Powerful',welcome_sub_3:'No limits.',welcome_title_4:'Cloud',welcome_sub_4:'Multi-device.',welcome_start:'Start',welcome_choose_lang:'Language',login_name:'Nickname or email',login_pass:'Password',login_avatar:'Avatar',login_btn:'Login / Sign up',login_users:'users',chat_search:'🔍 Search...',chat_select:'Select chat',chat_type:'Message...',chat_online:'🟢 online',chat_editing:'Editing',chat_rec_cancel:'Cancel',chat_rec_send:'➤',chat_clear:'🗑 Clear',chat:'⚙️ Chat',settings:'⚙️ Settings',settings_lang:'🌐 Language',settings_notif:'🔔 Notifications',settings_vibro:'📳 Vibration',settings_edit_profile:'✏️ Edit profile',profile:'👤 Profile',editprofile_title:'✏️ Profile',editprofile_avatar:'Avatar',editprofile_name:'Name',editprofile_bio:'Bio',editprofile_pass:'New password',cancel:'Cancel',save:'💾 Save',shop:'🛍️ Shop',shop_all_free:'✨ ALL FREE',shop_avatars:'👤 Avatars',shop_bubbles:'💬 Bubbles',shop_special:'🌟 Special',shop_sg:'🌈 SPACEGOD',shop_upload_theme:'📷 Upload',shop_reset_theme:'🗑 Reset',attach:'📎 Attachments',attach_photo:'Photo',attach_video:'Video',bg:'🎨 Wallpaper',stickers:'😎 Stickers',logout_confirm:'Logout?',notif_enable:'🔔 Enable?',notif_on:'ON',err_fill:'❌ Enter credentials',err_pass:'❌ Wrong password',err_blocked:'❌ Blocked',toast_hello:'✅ Hi,',toast_saved:'💾',toast_error:'❌ Error',you_offline:'⚫ offline',you_online:'🟢 online'},uk:{welcome_title_0:'DonorGram',welcome_sub_0:'Найшвидший.',welcome_title_1:'Швидко',welcome_sub_1:'Швидше.',welcome_title_2:'Вільно',welcome_sub_2:'Вільний.',welcome_title_3:'Потужно',welcome_sub_3:'Без обмежень.',welcome_title_4:'У хмарі',welcome_sub_4:'Мульти-доступ.',welcome_start:'Почати',welcome_choose_lang:'Мова',login_name:'Нікнейм',login_pass:'Пароль',login_avatar:'Аватар',login_btn:'Увійти',login_users:'користувачів',chat_search:'🔍 Пошук...',chat_select:'Виберіть чат',chat_type:'Повідомлення...',chat_online:'🟢 онлайн',chat_editing:'Редагування',chat_rec_cancel:'Скасувати',chat_rec_send:'➤',chat_clear:'🗑',chat:'⚙️ Чат',settings:'⚙️ Налаштування',settings_lang:'🌐 Мова',settings_notif:'🔔 Повідомлення',settings_vibro:'📳 Вібрація',settings_edit_profile:'✏️ Профіль',profile:'👤 Профіль',editprofile_title:'✏️ Профіль',editprofile_avatar:'Аватар',editprofile_name:"Ім'я",editprofile_bio:'Статус',editprofile_pass:'Пароль',cancel:'Скасувати',save:'💾 Зберегти',shop:'🛍️ Магазин',shop_all_free:'✨ БЕЗКОШТОВНО',shop_avatars:'👤 Аватарки',shop_bubbles:'💬 Бульбашки',shop_special:'🌟 Особливі',shop_sg:'🌈 SPACEGOD',shop_upload_theme:'📷',shop_reset_theme:'🗑',attach:'📎',attach_photo:'Фото',attach_video:'Відео',bg:'🎨 Шпалери',stickers:'😎 Стікери',logout_confirm:'Вийти?',notif_enable:'🔔 Увімкнути?',notif_on:'УВІМК',err_fill:'❌ Введіть дані',err_pass:'❌ Невірний пароль',err_blocked:'❌ Заблоковано',toast_hello:'✅ Привіт,',toast_saved:'💾',toast_error:'❌ Помилка',you_offline:'⚫ офлайн',you_online:'🟢 онлайн'}};
 
 const LANGUAGES=[{code:'ru',flag:'🇷🇺',name:'Русский'},{code:'en',flag:'🇬🇧',name:'English'},{code:'uk',flag:'🇺🇦',name:'Українська'}];
 let currentLang=localStorage.getItem('dg_lang')||'ru';
@@ -1452,43 +1452,61 @@ window.doLogin=async function(){
     var pass=($('loginPassword')&&$('loginPassword').value)||'';
     var avatar=((($('loginAvatar')&&$('loginAvatar').value)||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
     if(!name||!pass){showToast(t('err_fill'));return;}
-    if(name.length<2||name.length>24||!/[\p{L}\p{N}_-]/u.test(name)||/[^\p{L}\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
+    var isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name);
+    if(!isEmail&&(name.length<2||name.length>24||!/[\p{L}\p{N}_-]/u.test(name)||/[^\p{L}\p{N}_-]/u.test(name))){showToast('Введите никнейм (2–24 символа) или корректный e-mail');return;}
     if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
     window.dgLoginInProgress=true;
-    var email='dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
-    var profileRef=db.ref('users/'+name);
+    var email=isEmail?name.toLowerCase():'dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
+    var profileRef=isEmail?null:db.ref('users/'+name);
     try{
       // Сначала подтверждаем логин в Firebase Auth. Чтение профиля до входа
       // ломается, если Realtime Database разрешает чтение только авторизованным.
       var credential=null;
       var createdNow=false;
-      try{
+      if(isEmail){
+        // Вход по e-mail: только авторизация, никогда не создаём аккаунт автоматически.
         credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
-      }catch(authErr){
-        // При включённой защите Firebase может возвращать invalid-credential
-        // и для несуществующего email, скрывая user-not-found.
-        if(authErr.code==='auth/user-not-found'||authErr.code==='auth/invalid-credential'){
-          try{
-            credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);
-            createdNow=true;
-          }catch(createErr){
-            if(createErr.code==='auth/email-already-in-use'){
-              // Не маскируем конфликт уже созданного Firebase-аккаунта.
-              var takenErr=new Error('Firebase account exists but password did not match');
-              takenErr.code='DG_AUTH_EMAIL_TAKEN_PASSWORD_MISMATCH';
-              throw takenErr;
-            }else{
-              throw createErr;
+        var emailAuthUser=credential&&credential.user;
+        if(!emailAuthUser)throw new Error('Firebase Authentication не вернул пользователя');
+        // Находим существующий профиль DonorGram, привязанный к UID этого e-mail.
+        var linkedSnap=await db.ref('users').orderByChild('authUid').equalTo(emailAuthUser.uid).once('value');
+        var linkedProfiles=linkedSnap.val()||{};
+        var linkedNames=Object.keys(linkedProfiles);
+        if(linkedNames.length!==1){
+          await firebase.auth().signOut();
+          window.dgLoginInProgress=false;
+          showToast(linkedNames.length===0?'E-mail вошёл в Firebase, но профиль DonorGram ещё не привязан. Обратись к администратору.':'К этому e-mail привязано несколько профилей. Нужна проверка администратора.');
+          return;
+        }
+        name=linkedNames[0];
+        profileRef=db.ref('users/'+name);
+      }else{
+        try{
+          credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
+        }catch(authErr){
+          // Сохраняем прежний сценарий регистрации по никнейму.
+          if(authErr.code==='auth/user-not-found'||authErr.code==='auth/invalid-credential'){
+            try{
+              credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);
+              createdNow=true;
+            }catch(createErr){
+              if(createErr.code==='auth/email-already-in-use'){
+                var takenErr=new Error('Firebase account exists but password did not match');
+                takenErr.code='DG_AUTH_EMAIL_TAKEN_PASSWORD_MISMATCH';
+                throw takenErr;
+              }else{
+                throw createErr;
+              }
             }
+          }else{
+            throw authErr;
           }
-        }else{
-          throw authErr;
         }
       }
       var authUser=credential&&credential.user;
       if(!authUser)throw new Error('Firebase Authentication не вернул пользователя');
 
-      // Теперь запрос к Realtime Database выполняется уже после авторизации.
+      // Запрашиваем профиль после авторизации.
       var snap=await profileRef.once('value');
       var old=snap.exists()?snap.val():null;
       if(old&&old.blocked){
