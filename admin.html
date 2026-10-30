@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DonorGram — панель управления</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1020;color:#edf2ff;font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:980px;margin:32px auto;padding:0 16px}.panel{background:#151d32;border:1px solid #293653;border-radius:16px;padding:20px;margin:14px 0}
+h1{font-size:25px;margin:0 0 8px}h2{font-size:18px;margin:0 0 14px}.muted{color:#9eacc7}.row{display:flex;gap:10px;flex-wrap:wrap}input{flex:1;min-width:180px;background:#0c1427;color:white;border:1px solid #354361;border-radius:10px;padding:12px}
+button{border:0;border-radius:10px;padding:11px 15px;background:#536dfe;color:white;font-weight:650;cursor:pointer}button.danger{background:#b8324b}button.soft{background:#34425f}button:disabled{opacity:.45;cursor:not-allowed}
+#app{display:none}.user{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #293653}.user:last-child{border:0}.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#344a83;font-weight:700}.info{flex:1;min-width:0}.name{font-weight:700;overflow-wrap:anywhere}.sub{font-size:12px;color:#9eacc7;overflow-wrap:anywhere}.actions{display:flex;gap:7px;flex-wrap:wrap}.status{margin-top:10px;color:#aab8d3;white-space:pre-wrap}.warn{color:#ffcb75}.tag{font-size:11px;border:1px solid #536dfe;border-radius:99px;padding:3px 8px}
+</style>
+</head>
+<body><main>
+<header><h1>DonorGram · Админ-панель</h1><div class="muted">Управление профилями и доступом к мессенджеру</div></header>
+<section class="panel" id="login">
+<h2>Вход администратора</h2><div class="row"><input id="email" type="email" placeholder="Email администратора" autocomplete="username"><input id="password" type="password" placeholder="Пароль" autocomplete="current-password"><button id="loginBtn">Войти</button></div>
+<div class="status" id="loginStatus">Войти можно только Firebase-аккаунтом, UID которого добавлен в /admins.</div>
+</section>
+<section id="app">
+<div class="panel"><div class="row" style="align-items:center;justify-content:space-between"><div><h2>Пользователи</h2><div class="muted" id="count">Загрузка…</div></div><button class="soft" id="refresh">Обновить</button><button class="soft" id="logout">Выйти</button></div>
+<div class="row" style="margin:14px 0"><input id="search" placeholder="Поиск по нику или ID"></div><div id="users"></div><div class="status" id="status"></div></div>
+<div class="panel"><h2>Важно</h2><div class="muted">Удаление здесь стирает профиль пользователя из Realtime Database и его ссылки на чаты. Это не удаляет учётную запись из Firebase Authentication и не стирает историю сообщений целиком. Для полного удаления аккаунтов нужна серверная функция с Firebase Admin SDK.</div></div>
+</section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDUMMY_REPLACE_WITH_EXISTING_CONFIG",authDomain:"donor-fd6ea.firebaseapp.com",databaseURL:"https://donor-fd6ea-default-rtdb.firebaseio.com",projectId:"donor-fd6ea",storageBucket:"donor-fd6ea.firebasestorage.app",messagingSenderId:"825423285184",appId:"1:825423285184:web:77f0160f05609e81381625"};
+firebase.initializeApp(firebaseConfig);const auth=firebase.auth(),db=firebase.database();
+let allUsers={},adminUid=null;
+const $=id=>document.getElementById(id);
+function say(t){$('status').textContent=t}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('loginBtn').onclick=async()=>{ $('loginStatus').textContent='Проверяю доступ…';try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value); }catch(e){$('loginStatus').textContent='Ошибка входа: '+e.message;}};
+$('logout').onclick=()=>auth.signOut();$('refresh').onclick=loadUsers;$('search').oninput=render;
+auth.onAuthStateChanged(async user=>{if(!user){adminUid=null;$('login').style.display='block';$('app').style.display='none';return;}try{const a=await db.ref('admins/'+user.uid).once('value');if(a.val()!==true){await auth.signOut();$('loginStatus').textContent='Нет прав администратора. Добавьте этот UID в /admins со значением true.';return;}adminUid=user.uid;$('login').style.display='none';$('app').style.display='block';$('loginStatus').textContent='';loadUsers();}catch(e){await auth.signOut();$('loginStatus').textContent='Не удалось проверить права: '+e.message;}});
+async function loadUsers(){if(!adminUid)return;say('Загружаю пользователей…');try{const s=await db.ref('users').once('value');allUsers=s.val()||{};render();say('Список обновлён.');}catch(e){say('Ошибка чтения users: '+e.message+' Проверьте правила Realtime Database.');}}
+function render(){const q=$('search').value.toLowerCase();const entries=Object.entries(allUsers).filter(([id,u])=>(id+' '+(u&&u.name||'')).toLowerCase().includes(q));$('count').textContent=entries.length+' из '+Object.keys(allUsers).length+' пользователей';$('users').innerHTML=entries.map(([id,u])=>{u=u||{};const blocked=!!u.blocked;return '<div class="user"><div class="avatar">'+esc((u.avatar||u.name||id).slice(0,1).toUpperCase())+'</div><div class="info"><div class="name">'+esc(u.name||'Без ника')+' '+(blocked?'<span class="tag">заблокирован</span>':'')+'</div><div class="sub">'+esc(id)+'</div></div><div class="actions"><button class="soft" data-action="block" data-id="'+esc(id)+'">'+(blocked?'Разблокировать':'Заблокировать')+'</button><button class="danger" data-action="delete" data-id="'+esc(id)+'">Удалить профиль</button></div></div>';}).join('')||'<div class="muted">Ничего не найдено.</div>';}
+$('users').addEventListener('click',async e=>{const b=e.target.closest('button[data-action]');if(!b)return;const id=b.dataset.id,action=b.dataset.action;if(!adminUid||id===adminUid){say('Нельзя выполнять это действие для текущего администратора.');return;}if(action==='block'){const next=!allUsers[id]?.blocked;if(!confirm((next?'Заблокировать':'Разблокировать')+' пользователя '+id+'?'))return;try{await db.ref('users/'+id+'/blocked').set(next);allUsers[id].blocked=next;render();say('Статус обновлён.');}catch(err){say('Не удалось изменить статус: '+err.message);}}else if(action==='delete'){if(!confirm('Удалить профиль '+id+' из базы? Это действие нельзя отменить.'))return;try{await db.ref('users/'+id).remove();await db.ref('userChats/'+id).remove();delete allUsers[id];render();say('Профиль и список его чатов удалены. Firebase Auth-аккаунт и сообщения не удалены.');}catch(err){say('Удаление не выполнено: '+err.message);}}});
+</script></body></html>
