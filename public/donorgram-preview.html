@@ -1454,6 +1454,7 @@ window.doLogin=async function(){
     if(!name||!pass){showToast(t('err_fill'));return;}
     if(name.length<2||name.length>24||!/[\\p{L}\\p{N}_-]/u.test(name)||/[^\\p{L}\\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
     if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
+    window.dgLoginInProgress=true;
     var email='dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
     var profileRef=db.ref('users/'+name);
     try{
@@ -1486,7 +1487,9 @@ window.doLogin=async function(){
       currentUser={id:name,name:profile.name,avatar:profile.avatar,avatarUrl:profile.avatarUrl||null,bio:profile.bio||''};
       window.currentUser=currentUser;
       await loadInventoryAndStart();
+      window.dgLoginInProgress=false;
     }catch(err){
+      window.dgLoginInProgress=false;
       console.error('[DonorGram auth]',err);
       var message='Не удалось войти. Проверь подключение и настройки Firebase.';
       if(err.code==='auth/operation-not-allowed')message='В Firebase Console включи Authentication → Sign-in method → Email/Password.';
@@ -1505,6 +1508,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var lb=$('loginBtn');if(lb)lb.addEventListener('click',function(e){e.preventDefault();window.doLogin();});
   bindNotifSettings();renderStickers();applyTranslations();
   firebase.auth().onAuthStateChanged(async function(authUser){
+    if(window.dgLoginInProgress)return;
     if(!authUser){try{localStorage.removeItem('dg_user');}catch(e){}currentUser=null;window.currentUser=null;showLoginScreen();return;}
     var saved=null;try{saved=JSON.parse(localStorage.getItem('dg_user')||'null');}catch(e){}
     if(!saved||!saved.id){await firebase.auth().signOut();showLoginScreen();return;}
