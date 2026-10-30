@@ -1465,12 +1465,16 @@ window.doLogin=async function(){
       try{
         credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
       }catch(authErr){
-        if(authErr.code==='auth/user-not-found'){
+        // При включённой защите Firebase может возвращать invalid-credential
+        // и для несуществующего email, скрывая user-not-found.
+        if(authErr.code==='auth/user-not-found'||authErr.code==='auth/invalid-credential'){
           try{
             credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);
             createdNow=true;
           }catch(createErr){
             if(createErr.code==='auth/email-already-in-use'){
+              // Email уже занят: значит аккаунт существует, пароль неверный
+              // либо нужно войти в него обычным способом.
               credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
             }else{
               throw createErr;
