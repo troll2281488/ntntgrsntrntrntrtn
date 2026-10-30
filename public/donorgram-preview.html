@@ -6,6 +6,7 @@
 <title>✨ DonorGram Pro + DonAI</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -521,27 +522,15 @@ html,body{min-height:100%;overscroll-behavior:none}
 button,input,textarea,select{touch-action:manipulation}
 </style>
 <meta name="theme-color" content="#527da3"><meta name="apple-mobile-web-app-capable" content="yes">
-<style id="donorgram-visual-only">
-html,body{width:100%;height:100%;min-height:100%;margin:0!important;padding:0!important;overflow:hidden!important;background:#e7ebf0!important}
-body{position:relative!important;display:block!important;align-items:stretch!important;justify-content:stretch!important}
-#mainApp{display:block!important;width:100vw!important;height:100dvh!important;min-height:0!important}
-.app{width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;border-radius:0!important;box-shadow:none!important}
-.sidebar{width:100%!important;min-width:0!important;max-width:none!important;flex:1 1 auto!important;height:100%!important}
-.main-area{display:none!important}
-@media(min-width:768px){
- .app{display:flex!important}
- .sidebar{width:340px!important;min-width:320px!important;max-width:380px!important;flex:0 0 360px!important;border-right:1px solid #e0e0e0!important}
- .main-area{display:flex!important;position:relative!important;inset:auto!important;transform:none!important;width:auto!important;height:100%!important;flex:1 1 auto!important;min-width:0!important}
-}
-#loginScreen,#welcomeScreen{display:none!important;visibility:hidden!important;pointer-events:none!important}
-#chatsList .chat-item{pointer-events:none!important;cursor:default!important}
-#mainApp button,#mainApp input,#mainApp textarea,#mainApp select,#mainApp .user,#mainApp .chat-info,#mainApp .icon-btn,#mainApp [onclick]{pointer-events:none!important;cursor:default!important}
-#mainApp .sidebar{overflow:hidden}
-#mainApp .chats-list{overflow:auto}
-#mainApp .messages-container{overflow:auto}
-.demo-label{margin:10px 14px 4px;color:#8e98a3;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
-.demo-note{margin:10px 14px;padding:10px 12px;border-radius:12px;background:#eef3ff;color:#667eea;font-size:11px;line-height:1.4}
-@media(max-width:767px){.header{padding:12px 14px}.actions{gap:3px}.icon-btn{width:38px;height:38px}.search{padding:10px 14px}.chats-list{padding:6px 10px}.chat-item{padding:12px}.chat-avatar{width:48px;height:48px}.demo-note{margin-bottom:18px}}
+<style id="donorgram-live-ui">
+/* Live DonorGram: restore the real sign-in and chat controls. */
+#loginScreen{display:none;visibility:visible;pointer-events:auto}
+#welcomeScreen{pointer-events:auto}
+#mainApp button,#mainApp input,#mainApp textarea,#mainApp select,
+#mainApp .chat-item,#mainApp .chat-info,#mainApp .icon-btn{pointer-events:auto;cursor:pointer}
+#myProfileBtn{pointer-events:none!important;cursor:default!important}
+#messageInput{pointer-events:auto!important;cursor:text!important}
+#loginScreen input,#loginScreen button{pointer-events:auto!important}
 </style>
 </head>
 <body>
@@ -1340,7 +1329,7 @@ function openWallChatPicker(type){_wallPickerType=type||'photo';document.querySe
 function openFriendsList(uid,mode){var list=$('friendsListContainer');if(!list)return;$('friendsListTitle').innerText=mode==='friends'?'👥 Друзья':'👤 Подписчики';list.innerHTML='<div class="wall-picker-empty">⏳</div>';openModal('friendsListModal');var ids=[];Object.keys(state.userChats).forEach(function(cid){var c=state.userChats[cid];if(c&&c.type==='private'&&c.participants&&c.participants[uid]){var other=Object.keys(c.participants).find(function(id){return id!==uid;});if(other&&ids.indexOf(other)<0)ids.push(other);}});if(ids.length===0){list.innerHTML='<div class="wall-picker-empty">😕 Пусто</div>';return;}list.innerHTML=ids.map(function(id){var u=state.users[id]||{name:id};var av=u.avatar||(u.name?u.name[0].toUpperCase():'?');var avS=u.avatarUrl?'background-image:url('+u.avatarUrl+');background-size:cover;background-position:center':'';var avT=u.avatarUrl?'':esc(av);var os=getOnlineStatus(id);return '<div class="friends-list-item" data-fl-uid="'+esc(id)+'"><div class="fl-av" style="'+avS+'">'+avT+'</div><div style="flex:1;min-width:0"><div class="fl-name">'+esc(u.name||id)+'</div><div class="fl-status">'+os.text+'</div></div><i class="fas fa-chevron-right" style="color:#c8c8c8"></i></div>';}).join('');}
 function showProfile(uid){var u=state.users[uid];if(!u){showToast('❌');return;}currentProfileUid=uid;currentWallUid=uid;var profAv=$('profileAvatar');if(u.avatarUrl){profAv.innerText='';profAv.style.backgroundImage='url('+u.avatarUrl+')';profAv.style.backgroundSize='cover';profAv.style.backgroundPosition='center';}else{profAv.style.backgroundImage='';profAv.innerText=u.avatar||(u.name&&u.name[0]?u.name[0].toUpperCase():'U');}var t2=getSpacegodType(uid);['spacegod','spacecosmos','spacemint','hacker'].forEach(function(c){profAv.classList.remove(c);});if(t2)profAv.classList.add(t2);var cls=t2==='spacecosmos'?'rainbow-cosmos':t2==='spacemint'?'rainbow-mint':t2==='hacker'?'rainbow-hacker':'rainbow-name';if(t2){$('profileName').innerHTML='<span class="crown-icon">👑</span><span class="'+cls+'">'+esc(u.name||uid)+'</span>';}else{$('profileName').innerText=u.name||uid;}var os=getOnlineStatus(uid);$('profileOnline').innerText=os.text;$('profileBio').innerText=u.bio||'Нет статуса';$('vkFriendsCount').innerText=countUserFriends(uid);$('vkSubsCount').innerText=Object.keys(state.userChats).filter(function(cid){var c=state.userChats[cid];return c&&c.type==='private'&&c.participants&&c.participants[uid];}).length;var isMe=uid===currentUser.id;$('vkMyActions').style.display=isMe?'flex':'none';$('vkOtherActions').style.display=isMe?'none':'flex';$('blockUserBtn').style.display=(!isMe&&!isBlocked(uid))?'inline-flex':'none';$('unblockUserBtn').style.display=(!isMe&&isBlocked(uid))?'inline-flex':'none';var sgToggleBtn=$('sgToggleBtn');if(sgToggleBtn){if(isMe&&userInventory.spacegodType){sgToggleBtn.style.display='block';if(userInventory.spacegodDisabled){sgToggleBtn.innerText='✅ Включить SpaceGod';sgToggleBtn.classList.add('off');}else{sgToggleBtn.innerText='🔄 Отключить SpaceGod';sgToggleBtn.classList.remove('off');}}else{sgToggleBtn.style.display='none';}}updateCalcLinkBadge();renderWallTab('wall');openModal('profileModal');}
 function openEditProfile(){closeModal('profileModal');closeModal('settingsModal');if(!currentUser)return;var me=state.users[currentUser.id]||currentUser;$('editName').value=me.name||currentUser.name||'';$('editBio').value=me.bio||'';$('editPassword').value='';var p=$('editAvatarPreview');if(me.avatarUrl){p.innerText='';p.style.backgroundImage='url('+me.avatarUrl+')';p.style.backgroundSize='cover';$('editAvatarText').value='';}else{p.style.backgroundImage='';p.innerText=me.avatar||'U';$('editAvatarText').value=me.avatar||'';}openModal('editProfileModal');}
-function saveProfileEdits(){if(!currentUser)return;var nn=($('editName').value||'').trim();var nb=($('editBio').value||'').trim().slice(0,120);var nat=($('editAvatarText').value||'').trim().toUpperCase().slice(0,2);var np=$('editPassword').value||'';var up={};if(nn)up.name=nn;up.bio=nb;if(nat)up.avatar=nat;if(np)up.password=np;db.ref('users/'+currentUser.id).update(up).then(function(){if(nn)currentUser.name=nn;currentUser.bio=nb;if(nat)currentUser.avatar=nat;if(np)currentUser.password=np;localStorage.setItem('dg_user',JSON.stringify(currentUser));window.currentUser=currentUser;state.users[currentUser.id]=Object.assign(state.users[currentUser.id]||{},currentUser);var av=$('userAvatar');if(currentUser.avatarUrl){av.innerText='';av.parentElement.style.backgroundImage='url('+currentUser.avatarUrl+')';}else{av.innerText=currentUser.avatar||'U';av.parentElement.style.backgroundImage='';}updateSpaceGodUI();renderChats();closeModal('editProfileModal');showToast('✅');}).catch(function(err){showToast('❌ '+err.message);});}
+function saveProfileEdits(){if(!currentUser)return;var nn=($('editName').value||'').trim();var nb=($('editBio').value||'').trim().slice(0,120);var nat=($('editAvatarText').value||'').trim().toUpperCase().slice(0,2);var np=$('editPassword').value||'';var up={};if(nn)up.name=nn;up.bio=nb;if(nat)up.avatar=nat;if(np)up.password=np;db.ref('users/'+currentUser.id).update(up).then(function(){if(nn)currentUser.name=nn;currentUser.bio=nb;if(nat)currentUser.avatar=nat;if(np)currentUser.password=np;var safeUser=Object.assign({},currentUser);delete safeUser.password;localStorage.setItem('dg_user',JSON.stringify(safeUser));window.currentUser=currentUser;state.users[currentUser.id]=Object.assign(state.users[currentUser.id]||{},currentUser);var av=$('userAvatar');if(currentUser.avatarUrl){av.innerText='';av.parentElement.style.backgroundImage='url('+currentUser.avatarUrl+')';}else{av.innerText=currentUser.avatar||'U';av.parentElement.style.backgroundImage='';}updateSpaceGodUI();renderChats();closeModal('editProfileModal');showToast('✅');}).catch(function(err){showToast('❌ '+err.message);});}
 function openWallComposer(){_wallPending={text:'',mediaType:null,mediaUrl:null};$('wallComposerText').value='';$('wallComposerPreview').innerHTML='';openModal('wallComposerModal');}
 function wallAttachPhoto(){$('wallPhotoInput').click();}
 function wallAttachVoice(){if(_wallRecorder){try{_wallRecorder.stop();}catch(e){}return;}if(!navigator.mediaDevices){showToast('❌');return;}navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){_wallRecStream=stream;_wallRecChunks=[];var opt={};if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))opt={mimeType:'audio/webm;codecs=opus'};try{_wallRecorder=new MediaRecorder(stream,opt);}catch(e){showToast('❌');return;}_wallRecorder.ondataavailable=function(e){if(e.data&&e.data.size>0)_wallRecChunks.push(e.data);};_wallRecorder.onstop=function(){try{_wallRecStream.getTracks().forEach(function(t){t.stop();});}catch(e){}var blob=new Blob(_wallRecChunks,{type:'audio/webm'});_wallRecorder=null;_wallRecChunks=[];_wallRecStream=null;if(blob.size<500){showToast('❌');return;}blobToBase64(blob).then(function(b64){_wallPending.mediaType='audio';_wallPending.mediaUrl=b64;$('wallComposerPreview').innerHTML='<div class="audio-msg-wrapper" style="background:#f0f4ff;padding:8px;border-radius:12px"><button class="audio-play-btn" type="button" data-audio="'+esc(b64)+'"><i class="fas fa-play"></i></button><span class="audio-time">🎤</span></div>';showToast('✅');});};_wallRecorder.start();showToast('🎤 Говорите...');setTimeout(function(){if(_wallRecorder&&_wallRecorder.state==='recording')_wallRecorder.stop();},30000);}).catch(function(){showToast('❌');});}
@@ -1458,19 +1447,83 @@ document.addEventListener('click',function(e){
 
 document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='loginPassword'){window.doLogin();}if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='messageInput'){sendMessage();}if(e.key==='Enter'&&document.activeElement&&document.activeElement.id==='donAiInput'){processDonAiMessage();}});
 
-window.doLogin=function(){
-    var name=($('loginName')&&$('loginName').value||'').trim();var pass=$('loginPassword')&&$('loginPassword').value||'';var avatar=(($('loginAvatar')&&$('loginAvatar').value||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
+window.doLogin=async function(){
+    var name=(($('loginName')&&$('loginName').value)||'').trim();
+    var pass=($('loginPassword')&&$('loginPassword').value)||'';
+    var avatar=((($('loginAvatar')&&$('loginAvatar').value)||'').trim()||name.substring(0,2)).toUpperCase().slice(0,2);
     if(!name||!pass){showToast(t('err_fill'));return;}
-    db.ref('users/'+name).once('value').then(function(snap){
-        if(snap.exists()){var u=snap.val();if(u.password!==pass){showToast(t('err_pass'));return;}if(u.blocked){showToast(t('err_blocked'));return;}currentUser={id:name,name:u.name||name,avatar:u.avatar||avatar,avatarUrl:u.avatarUrl||null,password:pass,bio:u.bio||''};window.currentUser=currentUser;db.ref('users/'+name).update({status:'online'});return loadInventoryAndStart();}
-        else{var nu={name:name,avatar:avatar,password:pass,createdAt:Date.now(),status:'online',blocked:false,bio:''};db.ref('users/'+name).set(nu).then(function(){currentUser={id:name,name:name,avatar:avatar,password:pass,avatarUrl:null,bio:''};window.currentUser=currentUser;return loadInventoryAndStart();});}
-    }).catch(function(err){showToast(t('toast_error'));});
+    if(name.length<2||name.length>24||!/[\\p{L}\\p{N}_-]/u.test(name)||/[^\\p{L}\\p{N}_-]/u.test(name)){showToast('Никнейм: 2–24 буквы, цифры, _ или -');return;}
+    if(pass.length<6){showToast('Пароль должен содержать минимум 6 символов');return;}
+    var email='dg_'+Array.from(name.toLowerCase()).map(function(c){return c.codePointAt(0).toString(16);}).join('_')+'@donorgram.app';
+    var profileRef=db.ref('users/'+name);
+    try{
+      var snap=await profileRef.once('value');
+      var old=snap.exists()?snap.val():null;
+      if(old&&old.blocked){showToast(t('err_blocked'));return;}
+      var credential=null;
+      try{
+        credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
+      }catch(authErr){
+        if(authErr.code==='auth/user-not-found'){
+          if(old&&old.password&&old.password!==pass){showToast(t('err_pass'));return;}
+          if(old&&!old.password&&!old.authUid){showToast('Старый аккаунт требует восстановления. Напиши администратору.');return;}
+          try{credential=await firebase.auth().createUserWithEmailAndPassword(email,pass);}
+          catch(createErr){
+            if(createErr.code==='auth/email-already-in-use')credential=await firebase.auth().signInWithEmailAndPassword(email,pass);
+            else throw createErr;
+          }
+        }else{throw authErr;}
+      }
+      var authUser=credential.user;
+      if(!authUser)throw new Error('Firebase Authentication не вернул пользователя');
+      var profile=old||{name:name,avatar:avatar,createdAt:Date.now(),status:'online',blocked:false,bio:''};
+      profile.name=profile.name||name;
+      profile.avatar=profile.avatar||avatar;
+      profile.authUid=authUser.uid;
+      profile.status='online';
+      delete profile.password;
+      await profileRef.update({name:profile.name,avatar:profile.avatar,authUid:authUser.uid,status:'online',password:null});
+      currentUser={id:name,name:profile.name,avatar:profile.avatar,avatarUrl:profile.avatarUrl||null,bio:profile.bio||''};
+      window.currentUser=currentUser;
+      await loadInventoryAndStart();
+    }catch(err){
+      console.error('[DonorGram auth]',err);
+      var message='Не удалось войти. Проверь подключение и настройки Firebase.';
+      if(err.code==='auth/operation-not-allowed')message='В Firebase Console включи Authentication → Sign-in method → Email/Password.';
+      else if(err.code==='auth/weak-password')message='Пароль должен содержать минимум 6 символов.';
+      else if(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/invalid-login-credentials')message='Неверный никнейм или пароль.';
+      else if(err.code==='auth/network-request-failed')message='Нет соединения с Firebase.';
+      showToast(message);
+    }
 };
 function loadInventoryAndStart(){var name=currentUser.id;var read=db.ref('inventory/'+name).once('value');var timeout=new Promise(function(_,reject){setTimeout(function(){reject(new Error('inventory timeout'));},4500);});return Promise.race([read,timeout]).then(function(s){if(s.exists()){userInventory=Object.assign({},userInventory,s.val());userInventory.balance=Number(userInventory.balance)||5000;if(!userInventory.ownedSpacegods)userInventory.ownedSpacegods=[];}else{userInventory.balance=5000;userInventory.ownedSpacegods=[];db.ref('inventory/'+name).set(userInventory).catch(function(){});}return startApp();}).catch(function(){userInventory.balance=Number(userInventory.balance)||5000;userInventory.ownedSpacegods=userInventory.ownedSpacegods||[];return startApp();});}
 function startApp(){window.currentUser=currentUser;localStorage.setItem('dg_user',JSON.stringify(currentUser));hideSplash();$('loginScreen').style.display='none';$('mainApp').style.display='block';state.users[currentUser.id]=Object.assign(state.users[currentUser.id]||{},currentUser);var av=$('userAvatar');if(currentUser.avatarUrl){av.innerText='';av.parentElement.style.backgroundImage='url('+currentUser.avatarUrl+')';av.parentElement.style.backgroundSize='cover';}else av.innerText=currentUser.avatar||'U';updateSpaceGodUI();loadChatsCache();ensureNotesChat();setupPresence();loadData();applySidebarTheme();applyTranslations();gpsRestoreState();db.ref('users/'+currentUser.id).on('value',function(s){var v=s.val();if(v){state.users[currentUser.id]=v;currentUser.name=v.name||currentUser.name;currentUser.bio=v.bio||'';currentUser.avatar=v.avatar||currentUser.avatar;currentUser.avatarUrl=v.avatarUrl||null;window.currentUser=currentUser;var av2=$('userAvatar');if(currentUser.avatarUrl){av2.innerText='';av2.parentElement.style.backgroundImage='url('+currentUser.avatarUrl+')';av2.parentElement.style.backgroundSize='cover';}else{av2.innerText=currentUser.avatar||'U';av2.parentElement.style.backgroundImage='';}updateSpaceGodUI();debouncedRenderChats();}});setTimeout(function(){if(window.dgCalls)window.dgCalls.listenIncoming();},500);setTimeout(function(){if('Notification' in window&&Notification.permission==='default'){$('notifPermBar').classList.add('show');setTimeout(function(){$('notifPermBar').classList.remove('show');},8000);}},2000);showToast(t('toast_hello')+' '+currentUser.name+'!');setTimeout(startKeepAlive,500);}
 function setupPresence(){if(!currentUser)return;var mr=db.ref('users/'+currentUser.id+'/status');db.ref('.info/connected').on('value',function(s){if(s.val()===true){mr.onDisconnect().set('offline');mr.set('online');}});window.addEventListener('beforeunload',function(){mr.set('offline');});}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&currentUser){startKeepAlive();if(_keepAliveCtx&&_keepAliveCtx.state==='suspended'){try{_keepAliveCtx.resume();}catch(e){}}try{db.ref('userChats/'+currentUser.id).once('value').then(function(s){state.userChats=s.val()||{};_lastChatsHash='';debouncedRenderChats();saveChatsCache();syncUserSubscriptions();}).catch(function(){});if(!notifInitialized){startNotificationWatcher();}if(window.dgCalls)window.dgCalls.listenIncoming();}catch(e){}}});
-document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.modal,.image-viewer,.video-viewer').forEach(function(el){el.classList.remove('show');el.style.display='none';});var lb=$('loginBtn');if(lb)lb.addEventListener('click',function(e){e.preventDefault();window.doLogin();});bindNotifSettings();renderStickers();applyTranslations();var saved=null;try{saved=localStorage.getItem('dg_user');}catch(storageErr){}if(saved){try{currentUser=JSON.parse(saved);window.currentUser=currentUser;if(!currentUser||!currentUser.id)throw new Error('bad');$('loginScreen').style.display='none';$('mainApp').style.display='block';var av=$('userAvatar');if(currentUser.avatarUrl){av.innerText='';av.parentElement.style.backgroundImage='url('+currentUser.avatarUrl+')';}else av.innerText=currentUser.avatar||'U';updateSpaceGodUI();var userRead=db.ref('users/'+currentUser.id).once('value');var userTimeout=new Promise(function(_,reject){setTimeout(function(){reject(new Error('user check timeout'));},4500);});Promise.race([userRead,userTimeout]).then(function(chk){if(!chk.exists()||chk.val().blocked){localStorage.removeItem('dg_user');location.reload();return;}var v=chk.val();currentUser.name=v.name||currentUser.name;currentUser.avatar=v.avatar||currentUser.avatar;currentUser.avatarUrl=v.avatarUrl||null;currentUser.bio=v.bio||'';window.currentUser=currentUser;return loadInventoryAndStart();}).catch(function(){/* Сеть/Firebase недоступны: запускаем сохранённую сессию, синхронизация возобновится при подключении. */loadInventoryAndStart();});return;}catch(e){localStorage.removeItem('dg_user');}}var ws=localStorage.getItem('dg_welcome_seen');if(!ws){showWelcomeScreen();return;}showLoginScreen();});
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.modal,.image-viewer,.video-viewer').forEach(function(el){el.classList.remove('show');el.style.display='none';});
+  var lb=$('loginBtn');if(lb)lb.addEventListener('click',function(e){e.preventDefault();window.doLogin();});
+  bindNotifSettings();renderStickers();applyTranslations();
+  firebase.auth().onAuthStateChanged(async function(authUser){
+    if(!authUser){try{localStorage.removeItem('dg_user');}catch(e){}currentUser=null;window.currentUser=null;showLoginScreen();return;}
+    var saved=null;try{saved=JSON.parse(localStorage.getItem('dg_user')||'null');}catch(e){}
+    if(!saved||!saved.id){await firebase.auth().signOut();showLoginScreen();return;}
+    try{
+      var snap=await db.ref('users/'+saved.id).once('value');
+      if(!snap.exists()||snap.val().blocked||snap.val().authUid!==authUser.uid){await firebase.auth().signOut();showLoginScreen();return;}
+      var v=snap.val();
+      currentUser={id:saved.id,name:v.name||saved.name||saved.id,avatar:v.avatar||saved.avatar||'U',avatarUrl:v.avatarUrl||null,bio:v.bio||''};
+      window.currentUser=currentUser;
+      $('loginScreen').style.display='none';$('welcomeScreen').classList.remove('show');$('mainApp').style.display='block';
+      var av=$('userAvatar');if(av){if(currentUser.avatarUrl){av.innerText='';av.parentElement.style.backgroundImage='url('+currentUser.avatarUrl+')';}else av.innerText=currentUser.avatar;}
+      updateSpaceGodUI();
+      await profileStatusOnline();
+      await loadInventoryAndStart();
+    }catch(e){console.error('[DonorGram session]',e);showToast('Не удалось загрузить профиль из Firebase.');showLoginScreen();}
+  });
+  var logout=$('logoutBtn');if(logout)logout.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();firebase.auth().signOut().then(function(){location.reload();});},true);
+});
+async function profileStatusOnline(){if(currentUser&&currentUser.id)await db.ref('users/'+currentUser.id).update({status:'online'});}
 document.getElementById('photoInput').addEventListener('change',function(e){if(e.target.files[0]){var f=e.target.files[0];showToast('⏳');compressImage(f,1280,0.7).then(function(b64){if(b64){pendingMedia={type:'photo',url:b64};sendMessage();}else{fileToBase64(f).then(function(b){pendingMedia={type:'photo',url:b};sendMessage();});}});}e.target.value='';});
 document.getElementById('videoInput').addEventListener('change',function(e){if(e.target.files[0]){var f=e.target.files[0];fileToBase64(f).then(function(b64){pendingMedia={type:'video',url:b64};sendMessage();});}e.target.value='';});
 document.getElementById('chatSearch').addEventListener('input',function(){debouncedRenderChats();handleUserSearch(this.value.trim());});
@@ -1943,45 +1996,6 @@ document.getElementById('donAiClearBtn').addEventListener('click', () => {
 })();
 </script>
 
-<script id="donorgram-demo-bootstrap">
-(function(){
- function mountDemo(){
-  const byId=id=>document.getElementById(id);
-  const welcome=byId('welcomeScreen'),login=byId('loginScreen'),app=byId('mainApp');
-  if(welcome)welcome.style.display='none';
-  if(login)login.style.display='none';
-  if(app)app.style.display='block';
-  const name=byId('userName'); if(name)name.textContent='DonorGram';
-  const avatar=byId('userAvatar'); if(avatar)avatar.textContent='D';
-  const online=byId('userOnline'); if(online)online.textContent='🟢 в сети';
-  const list=byId('chatsList');
-  if(list){
-   list.innerHTML='<div class="demo-label">Избранные чаты</div>'+
-   [
-    ['D','DonorGram','Добро пожаловать в DonorGram ✨','12:48','2'],
-    ['А','Александр','Отправил фотографию','12:35','1'],
-    ['М','Мария','Спасибо большое ❤️','11:52',''],
-    ['👥','Друзья','Иван: скоро буду','Вчера','3'],
-    ['🤖','DonAI','Привет! Чем могу помочь?','Вчера',''],
-    ['⭐','Избранное','Заметки и сохранённые сообщения','Пн','']
-   ].map((c,i)=>'<div class="chat-item"><div class="chat-avatar">'+c[0]+'<span class="online-dot"></span></div><div class="chat-content"><div class="chat-name">'+c[1]+'</div><div class="chat-last">'+c[2]+'</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;color:#8e98a3;font-size:10px">'+c[3]+(c[4]?'<span class="badge">'+c[4]+'</span>':'')+'</div></div>').join('')+
-   '<div class="demo-note">Это визуальный макет DonorGram. Кнопки и действия пока не подключены — функции добавим поэтапно.</div>';
-  }
-  const title=byId('chatName');if(title)title.textContent='DonorGram';
-  const status=byId('chatStatus');if(status)status.textContent='🟢 онлайн · демонстрационный чат';
-  const avatarChat=byId('chatAvatar');if(avatarChat)avatarChat.textContent='D';
-  const messages=byId('messagesContainer');
-  if(messages){
-   messages.innerHTML='<div class="demo-label" style="text-align:center">Сегодня</div>'+
-   '<div class="message message-received"><div class="message-bubble">Добро пожаловать в <b>DonorGram</b>! ✨<div class="message-time">12:40</div></div></div>'+
-   '<div class="message message-received"><div class="message-bubble">Здесь будет твой мессенджер — с чатами, профилями, звонками и DonAI.<div class="message-time">12:41</div></div></div>'+
-   '<div class="message message-sent"><div class="message-bubble">Выглядит отлично! 🚀<div class="message-time">12:45　✓✓</div></div></div>'+
-   '<div class="message message-received"><div class="message-bubble">Сейчас мы настраиваем только внешний вид. Функции подключим отдельно, шаг за шагом.<div class="message-time">12:48</div></div></div>';
-  }
-  const input=byId('messageInput');if(input)input.placeholder='Сообщение...';
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountDemo);else mountDemo();
-})();
-</script>
+
 </body>
 </html>
